@@ -1,0 +1,89 @@
+html,body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  padding: 8px;
+  background-color: #2F4056;
+  overflow-y: scroll;
+}
+
+.input_wrap {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+}
+
+.content {
+  padding-bottom: 100px;
+}
+
+.nick_name {
+  color: #eee;
+  font-size: 15px;
+  padding: 3px;
+  word-break: normal;
+  white-space: pre-warp;
+  word-wrap: break-word;
+}
+
+.join_label {
+  font-size: 12px;
+  color: #5FB878;
+  padding: 3px;
+}
+
+.leave_label {
+  font-size: 12px;
+  color: #FF5722;
+  padding: 3px;
+}
+
+.user0 {
+  color: #e53935;
+}
+.user1 {
+  color: #d81b60;
+}
+.user2 {
+  color: #8e24aa;
+}
+.user3 {
+  color: #5e35b1;
+}
+.user4 {
+  color: #3949ab;
+}
+.user5 {
+  color: #1e88e5;
+}
+.user6 {
+  color: #039be5;
+}
+.user7 {
+  color: #00acc1;
+}
+.user8 {
+  color: #00897b;
+}
+.user9 {
+  color: #43a047;
+}
+.user10 {
+  color: #7cb342;
+}
+.user11 {
+  color: #c0ca33;
+}
+.user12 {
+  color: #fdd835;
+}
+.user13 {
+  color: #ffb300;
+}
+.user14 {
+  color: #fb8c00;
+}

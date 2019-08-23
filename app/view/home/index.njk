@@ -1,0 +1,231 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>匿名聊天</title>
+    <link rel="icon" href="/public/img/bitbug_favicon.ico" type="image/x-icon" />
+    <link rel="shortcut icon" href="/public/img/bitbug_favicon.ico" type="image/x-icon"/>
+    <link rel="stylesheet" href="/public/css/index.css">
+    <link rel="stylesheet" href="/public/layui/css/layui.css">
+    <script src="/public/layui/layui.js"></script>
+    <script src="/public/js/socket.io.js"></script>
+    <script src="/public/js/jquery-2.2.4.min.js"></script>
+    <script type="text/javascript" >
+
+
+      var visible = true;
+      var unreadCount = 0;
+      document.addEventListener('visibilitychange', function() { //浏览器切换事件
+        if(document.visibilityState === 'hidden') { //状态判断
+          {# document.title = '标题二';  #}
+          visible = false;
+        } else {
+          visible = true;
+          unreadCount = 0;
+          document.title = '匿名聊天';
+        }
+      });
+
+      if (window.Notification) {
+        Notification.requestPermission(function(permission) {
+          if (permission === "granted") {
+            {# console.log(11) #}
+            {# notic(); #}
+          }
+        });
+      }
+
+      function goBottom() {
+        document.body.scrollTop = document.body.scrollHeight;
+      }
+
+      function escape(str) {
+        return $("<div/>").text(str).html();
+      }
+
+      function notic() {
+        if (window.Notification && Notification.permission === "granted") {
+          var notification = new Notification("你收到一条新消息", {
+            icon: '/public/img/bitbug_favicon.ico'
+          });
+        }
+      }
+
+      var names = ['凯隐', '洛', '霞', '卡蜜尔', '艾翁', '克烈', '塔莉垭', '索尔', '烬', '俄洛伊', '千珏', '塔姆', '艾克', '巴德', 
+          '雷克赛', '卡莉丝塔', '阿兹尔', '纳尔', '布隆', '维克兹', '亚索', '金克丝', '卢锡安', '亚托克斯', '丽桑卓', '扎克', '奎因', '锤石',
+          '蔚', '娜美', '劫', '伊莉丝', '卡兹克', '辛德拉', '雷恩加尔', '黛安娜', '婕拉', '杰斯', '德莱文', '德莱厄斯', '赫卡里姆', '韦鲁斯', '提莫', '德玛西亚之力'
+      ];
+      
+      var log = console.log;
+      var index = parseInt(Math.random() * 15);
+      var user = '';
+      while (true) {
+        user = prompt("请输入您的昵称", names[parseInt(Math.random() * names.length)]);
+        if (user.trim()) {
+          break;
+        }
+      }
+
+      window.onload = function() {
+        // init
+        var socket = io('/', {
+
+          // 实际使用中可以在这里传递参数
+          query: {
+            room: '{{ room }}',
+            userId: escape(user),
+            index: index
+          },
+
+          transports: ['websocket']
+        });
+
+        socket.on('connect', () => {
+          var id = socket.id;
+
+          $('#content_area').append('<p class="join_label">连接成功</p>');
+
+          // 监听自身 id 以实现 p2p 通讯
+          socket.on(id, msg => {
+            if (msg.data.payload.mime) {
+              if (msg.data.payload.mime.startsWith('image')) {
+                $('#content_area').append('<p class="nick_name"><label class="user' 
+                  + msg.meta.index + '">' + msg.meta.user + '</label>:  <a href="' 
+                  + msg.data.payload.url + '" target="blank"><image style="width: 120px; height: 120px;" src="' 
+                  + msg.data.payload.url + '" /></a></p>');
+              } else if (msg.data.payload.mime.startsWith('video')) {
+                $('#content_area').append('<p class="nick_name"><label class="user' 
+                  + msg.meta.index + '">' + msg.meta.user + '</label>:  ' 
+                  + '<a class="layui-btn layui-btn-primary" target="blank" href="'+ msg.data.payload.url +'">点击观看视频</a></p>');
+              } else {
+                $('#content_area').append('<p class="nick_name"><label class="user' 
+                  + msg.meta.index + '">' + msg.meta.user + '</label>:  ' 
+                  + '<a class="layui-btn layui-btn-primary" target="blank" href="'+ msg.data.payload.url +'">点击下载</a></p>');
+              }
+            } else {
+              $('#content_area').append('<p class="nick_name"><label class="user' + msg.meta.index + '">' + msg.meta.user + '</label>:  ' + msg.data.payload.msg + '</p>');
+            }
+            goBottom();
+            if (!visible) {
+              notic();
+              unreadCount++;
+              document.title = unreadCount + '条未读消息';
+            }
+          });
+        });
+
+        // 接收在线用户信息
+        socket.on('online', msg => {
+          //log('#online,', msg);
+          if (msg.action === 'leave') {
+            $('#content_area').append('<p class="leave_label">' + msg.user + '离开了群聊</p>');
+          } else if (msg.action === 'join') {
+            $('#content_area').append('<p class="join_label">' + msg.user + '加入了群聊</p>');
+            if (msg.clients && msg.clients.length > 0) {
+              $('#content_area').append('<p class="join_label user13">当前群聊人数: ' + msg.clients.join(' , ') + '</p>');
+            }
+          }
+          goBottom();
+        });
+
+        // 系统事件
+        socket.on('disconnect', msg => {
+          log('#disconnect', msg);
+          $('#content_area').append('<p class="leave_label">连接断开</p>');
+          goBottom();
+        });
+
+        socket.on('disconnecting', () => {
+          log('#disconnecting');
+          $('#content_area').append('<p class="join_label">正在重连</p>');
+          goBottom();
+        });
+
+        socket.on('error', () => {
+          log('#error');
+        });
+
+        window.socket = socket;
+      };
+
+      function send() {
+        if ((event.which || event.keyCode) === 13) {
+          var desc = escape($('#desc').val().trim());
+          if (desc) {
+            socket.emit('exchange', {
+              payload: {
+                msg: desc,
+              }
+            });
+            {# $('#content_area').append('<p class="nick_name">' + desc + '</p>'); #}
+            $('#content_area').append('<p class="nick_name"><label class="user' + index + '">' + user + '</label>:  ' + desc + '</p>');
+          }
+          event.preventDefault();
+          $('#desc').val('');
+          goBottom();
+        }
+      }
+
+    </script>
+  </head>
+  <body class="layui-bg-black" style="padding: 8px;">
+    <div class="layui-container main">  
+      <div class="layui-row content">
+        <div id="content_area" class="layui-col-md12">
+          
+        </div>
+      </div>
+      <div class="input_wrap">
+        <div class="layui-container">
+          {# <textarea id="desc" placeholder="请输入内容" class="layui-textarea" onkeydown='send();'></textarea> #}
+          <div class="layui-row">
+            <div class="layui-col-md9">
+              <textarea id="desc" placeholder="请输入内容" class="layui-textarea" onkeydown='send();'></textarea>
+            </div>
+            <div class="layui-col-md3">
+              <button type="button" class="layui-btn" id="test1">
+                <i class="layui-icon">&#xe67c;</i>上传文件
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script>
+    layui.use('upload', function(){
+      var upload = layui.upload;
+      //执行实例
+      var uploadInst = upload.render({
+        elem: '#test1',
+        url: '/upload?_csrf={{ ctx.csrf | safe }}',
+        accept: 'file',
+        done: function(res) {
+          //上传完毕回调
+          if (res.mime.startsWith('image')) {
+            $('#content_area').append('<p class="nick_name"><label class="user' 
+              + index + '">' + user + '</label>:  <a href="' 
+              + res.url + '" target="blank"><image style="width: 120px; height: 120px;" src="' 
+              + res.url + '" /></a></p>');
+          } else if (res.mime.startsWith('video')) {
+            $('#content_area').append('<p class="nick_name"><label class="user' 
+              + index + '">' + user + '</label>:  <a class="layui-btn layui-btn-primary" target="blank" href="'+res.url +'">点击观看视频</a></p>');
+          } else {
+            $('#content_area').append('<p class="nick_name"><label class="user' 
+              + index + '">' + user + '</label>:  <a class="layui-btn layui-btn-primary" target="blank" href="'+res.url +'">点击下载</a></p>');
+          }
+          socket.emit('exchange', {
+            payload: {
+              url: res.url,
+              mime: res.mime
+            }
+          });
+          goBottom();
+        },
+        error: function(){
+          //请求异常回调
+        }
+      });
+    });
+  </script>
+</html>
